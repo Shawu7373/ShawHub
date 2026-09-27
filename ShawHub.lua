@@ -1,12 +1,12 @@
---// SHAW HUB v4 — with Movement, Visual, and 99 Nights tabs
+ --// SHAW HUB v5 — Credits, God Mode, Red Neon, Fixed Fly
 local CONFIG = {
 	KillAuraRange = 1,
 	KillAuraDelay = 0.1,
 	AuraAutoFace  = true,
-	NeonColor     = Color3.fromRGB(0, 255, 255),
+	NeonColor     = Color3.fromRGB(255, 0, 0),
 	WalkSpeed     = 50,
 	JumpPower     = 100,
-	FlySpeed      = 100,
+	FlySpeed      = 80,
 }
 
 local Players = game:GetService("Players")
@@ -17,9 +17,18 @@ local Lighting = game:GetService("Lighting")
 local Player = Players.LocalPlayer
 local GuiParent = Player:WaitForChild("PlayerGui")
 
+-- Wipe any stuck Shaw Hub instances (fixes "remains forever" bug)
 for _, v in ipairs(GuiParent:GetChildren()) do
-	if v.Name == "ShawHub" then v:Destroy() end
+	if v.Name == "ShawHub" or v.Name == "ShawMini" then
+		pcall(function() v:Destroy() end)
+	end
 end
+pcall(function()
+	local cg = game:GetService("CoreGui")
+	for _, v in ipairs(cg:GetChildren()) do
+		if v.Name == "ShawHub" then v:Destroy() end
+	end
+end)
 
 local function makeDraggable(dragPart, targetFrame)
 	local dragging, dragStart, startPos = false, nil, nil
@@ -57,11 +66,13 @@ Gui.DisplayOrder = 999999
 Gui.Parent = GuiParent
 
 local Main = Instance.new("Frame")
-Main.Size = UDim2.fromOffset(400, 320)
-Main.Position = UDim2.new(0.5, -200, 0.5, -160)
+Main.Name = "Main"
+Main.Size = UDim2.fromOffset(420, 340)
+Main.Position = UDim2.new(0.5, -210, 0.5, -170)
 Main.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
 Main.BorderSizePixel = 0
 Main.Active = true
+Main.Visible = true
 Main.Parent = Gui
 
 local C = Instance.new("UICorner")
@@ -70,7 +81,7 @@ C.Parent = Main
 
 local NS = Instance.new("UIStroke")
 NS.Color = CONFIG.NeonColor
-NS.Thickness = 1.6
+NS.Thickness = 1.8
 NS.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 NS.Parent = Main
 
@@ -89,7 +100,7 @@ local Title = Instance.new("TextLabel")
 Title.Size = UDim2.new(1, -110, 1, 0)
 Title.Position = UDim2.fromOffset(16, 0)
 Title.BackgroundTransparency = 1
-Title.Text = "Shaw Hub v4"
+Title.Text = "Shaw Hub v5"
 Title.TextColor3 = Color3.fromRGB(255, 255, 255)
 Title.TextSize = 17
 Title.Font = Enum.Font.GothamBold
@@ -134,7 +145,7 @@ CC.Parent = Confirm
 
 local CS = Instance.new("UIStroke")
 CS.Color = CONFIG.NeonColor
-CS.Thickness = 1.6
+CS.Thickness = 1.8
 CS.Parent = Confirm
 
 local CText = Instance.new("TextLabel")
@@ -244,6 +255,7 @@ local MovementPage = makePage("Movement")
 local VisualPage   = makePage("Visual")
 local NightsPage   = makePage("Nights")
 local PlayersPage  = makePage("Players")
+local CreditsPage  = makePage("Credits")
 local UpdatesPage  = makePage("Updates")
 
 local function PageTitle(parent, text)
@@ -282,7 +294,6 @@ local function ToggleBtn(parent, y, label)
 	s.Color = Color3.fromRGB(40, 40, 40)
 	s.Thickness = 1
 	s.Parent = B
-	B.Name = label
 	return B
 end
 
@@ -296,6 +307,7 @@ local MoveBtn     = SideButton("➤  Move", "Movement")
 local VisualBtn   = SideButton("👁  Visual", "Visual")
 local NightsBtn   = SideButton("🌲  99 Nights", "Nights")
 local PlayersBtn  = SideButton("♙  Players", "Players")
+local CreditsBtn  = SideButton("★  Credits", "Credits")
 local UpdatesBtn  = SideButton("⚡  Updates", "Updates")
 
 local function ShowPage(name)
@@ -317,6 +329,7 @@ MoveBtn.Activated:Connect(function() ShowPage("Movement") end)
 VisualBtn.Activated:Connect(function() ShowPage("Visual") end)
 NightsBtn.Activated:Connect(function() ShowPage("Nights") end)
 PlayersBtn.Activated:Connect(function() ShowPage("Players") end)
+CreditsBtn.Activated:Connect(function() ShowPage("Credits") end)
 UpdatesBtn.Activated:Connect(function() ShowPage("Updates") end)
 
 -- HOME
@@ -325,7 +338,7 @@ local HT = Instance.new("TextLabel")
 HT.Size = UDim2.new(1, -24, 1, -40)
 HT.Position = UDim2.fromOffset(12, 34)
 HT.BackgroundTransparency = 1
-HT.Text = "Welcome to Shaw Hub v4\n\nCombat   -> Kill Aura + Anti-Hit\nMove     -> Speed, Jump, Fly, Noclip\nVisual   -> Fullbright, ESP\n99 Nights -> game-specific helpers\nPlayers  -> Teleport to players"
+HT.Text = "Welcome to Shaw Hub v5\n\nCombat    -> Kill Aura + Anti-Hit\nMove      -> Speed, Jump, Fly, Noclip\nVisual    -> Fullbright, ESP\n99 Nights -> God Mode + helpers\nPlayers   -> Teleport to players\nCredits   -> About this hub"
 HT.TextColor3 = Color3.fromRGB(190, 190, 190)
 HT.TextSize = 11
 HT.Font = Enum.Font.Gotham
@@ -346,6 +359,11 @@ end)
 
 local AntiEnabled = false
 local AntiBtn = ToggleBtn(CombatPage, 68, "Anti-Hit")
+AntiBtn.Activated:Connect(function()
+	AntiEnabled = not AntiEnabled
+	setLabel(AntiBtn, "Anti-Hit", AntiEnabled)
+end)
+
 local function applyAnti()
 	if not AntiEnabled then return end
 	local ch = Player.Character
@@ -358,13 +376,8 @@ local function applyAnti()
 		ff.Parent = ch
 	end
 end
-AntiBtn.Activated:Connect(function()
-	AntiEnabled = not AntiEnabled
-	setLabel(AntiBtn, "Anti-Hit", AntiEnabled)
-	applyAnti()
-end)
+
 Player.CharacterAdded:Connect(function() task.wait(0.5) applyAnti() end)
-RunService.Heartbeat:Connect(function() applyAnti() end)
 
 -- MOVEMENT
 PageTitle(MovementPage, "Movement")
@@ -412,57 +425,10 @@ UserInputService.JumpRequest:Connect(function()
 	end
 end)
 
-local flyBV, flyBG
-local function stopFly()
+local flyBV
+local function clearFly()
 	if flyBV then flyBV:Destroy(); flyBV = nil end
-	if flyBG then flyBG:Destroy(); flyBG = nil end
 end
-
-RunService.Heartbeat:Connect(function()
-	local ch = Player.Character
-	if not ch then return end
-	local h = ch:FindFirstChildOfClass("Humanoid")
-	local root = ch:FindFirstChild("HumanoidRootPart")
-
-	if h then
-		h.WalkSpeed = speedEnabled and CONFIG.WalkSpeed or 16
-		h.JumpPower = jumpEnabled and CONFIG.JumpPower or 50
-		h.UseJumpPower = true
-	end
-
-	if noclipEnabled and ch then
-		for _, part in ipairs(ch:GetDescendants()) do
-			if part:IsA("BasePart") and part.CanCollide then
-				part.CanCollide = false
-			end
-		end
-	end
-
-	if flyEnabled and root and not flyBV then
-		flyBV = Instance.new("BodyVelocity")
-		flyBV.MaxForce = Vector3.new(9e9, 9e9, 9e9)
-		flyBV.Velocity = Vector3.zero
-		flyBV.Parent = root
-		flyBG = Instance.new("BodyGyro")
-		flyBG.MaxTorque = Vector3.new(9e9, 9e9, 9e9)
-		flyBG.P = 9e4
-		flyBG.Parent = root
-	elseif not flyEnabled then
-		stopFly()
-	end
-
-	if flyEnabled and flyBV and root then
-		local cam = workspace.CurrentCamera
-		local dir = Vector3.zero
-		if UserInputService:IsKeyDown(Enum.KeyCode.W) then dir += cam.CFrame.LookVector end
-		if UserInputService:IsKeyDown(Enum.KeyCode.S) then dir -= cam.CFrame.LookVector end
-		if UserInputService:IsKeyDown(Enum.KeyCode.A) then dir -= cam.CFrame.RightVector end
-		if UserInputService:IsKeyDown(Enum.KeyCode.D) then dir += cam.CFrame.RightVector end
-		if UserInputService:IsKeyDown(Enum.KeyCode.Space) then dir += Vector3.new(0,1,0) end
-		flyBV.Velocity = dir * CONFIG.FlySpeed
-		flyBG.CFrame = cam.CFrame
-	end
-end)
 
 -- VISUAL
 PageTitle(VisualPage, "Visual")
@@ -496,14 +462,18 @@ local espBoxes = {}
 
 local function createESP(plr)
 	if espBoxes[plr] then return end
+	local ch = plr.Character
+	if not ch then return end
+	local root = ch:FindFirstChild("HumanoidRootPart")
+	if not root then return end
 	local box = Instance.new("BoxHandleAdornment")
 	box.Size = Vector3.new(4, 5, 4)
-	box.Adornee = plr.Character and plr.Character:FindFirstChild("HumanoidRootPart")
+	box.Adornee = root
 	box.AlwaysOnTop = true
 	box.ZIndex = 5
 	box.Transparency = 0.4
-	box.Color3 = Color3.fromRGB(0, 255, 255)
-	box.Parent = plr.Character
+	box.Color3 = Color3.fromRGB(255, 0, 0)
+	box.Parent = ch
 	espBoxes[plr] = box
 end
 
@@ -535,27 +505,22 @@ end)
 -- 99 NIGHTS
 PageTitle(NightsPage, "99 Nights in the Forest")
 
-local nightsInfo = Instance.new("TextLabel")
-nightsInfo.Size = UDim2.new(1, -24, 0, 30)
-nightsInfo.Position = UDim2.fromOffset(12, 32)
-nightsInfo.BackgroundTransparency = 1
-nightsInfo.Text = "Game-specific helpers. May not work if the game patches."
-nightsInfo.TextColor3 = Color3.fromRGB(170, 170, 170)
-nightsInfo.TextSize = 10
-nightsInfo.Font = Enum.Font.Gotham
-nightsInfo.TextXAlignment = Enum.TextXAlignment.Left
-nightsInfo.TextWrapped = true
-nightsInfo.Parent = NightsPage
+local GodEnabled = false
+local godBtn = ToggleBtn(NightsPage, 34, "God Mode")
+godBtn.Activated:Connect(function()
+	GodEnabled = not GodEnabled
+	setLabel(godBtn, "God Mode", GodEnabled)
+end)
 
 local treeEnabled = false
-local treeBtn = ToggleBtn(NightsPage, 64, "Auto Chop Trees")
+local treeBtn = ToggleBtn(NightsPage, 68, "Auto Chop Trees")
 treeBtn.Activated:Connect(function()
 	treeEnabled = not treeEnabled
 	setLabel(treeBtn, "Auto Chop Trees", treeEnabled)
 end)
 
 local bringEnabled = false
-local bringBtn = ToggleBtn(NightsPage, 98, "Bring Items")
+local bringBtn = ToggleBtn(NightsPage, 102, "Bring Items")
 bringBtn.Activated:Connect(function()
 	bringEnabled = not bringEnabled
 	setLabel(bringBtn, "Bring Items", bringEnabled)
@@ -574,33 +539,18 @@ bringBtn.Activated:Connect(function()
 	end
 end)
 
-local campEnabled = false
-local campBtn = ToggleBtn(NightsPage, 132, "Auto Feed Campfire")
-campBtn.Activated:Connect(function()
-	campEnabled = not campEnabled
-	setLabel(campBtn, "Auto Feed Campfire", campEnabled)
-end)
-
--- auto chop loop
-RunService.Heartbeat:Connect(function()
-	if not treeEnabled then return end
+local function applyGod()
+	if not GodEnabled then return end
 	local ch = Player.Character
-	local root = ch and ch:FindFirstChild("HumanoidRootPart")
-	local tool = ch and ch:FindFirstChildOfClass("Tool")
-	if not root or not tool then return end
-
-	local nearest, nd = nil, 30
-	for _, obj in ipairs(workspace:GetDescendants()) do
-		if obj:IsA("BasePart") and (obj.Name:lower():find("tree") or obj.Name:lower():find("wood") or obj.Name:lower():find("log")) then
-			local d = (obj.Position - root.Position).Magnitude
-			if d < nd then nearest, nd = obj, d end
-		end
+	if not ch then return end
+	local h = ch:FindFirstChildOfClass("Humanoid")
+	if h then pcall(function() h.MaxHealth = math.huge; h.Health = math.huge end) end
+	if not ch:FindFirstChildOfClass("ForceField") then
+		local ff = Instance.new("ForceField")
+		ff.Visible = false
+		ff.Parent = ch
 	end
-	if nearest then
-		root.CFrame = CFrame.new(nearest.Position + Vector3.new(0, 3, 0))
-		pcall(function() tool:Activate() end)
-	end
-end)
+end
 
 -- PLAYERS
 PageTitle(PlayersPage, "Players")
@@ -661,13 +611,28 @@ RefreshPlayers()
 Players.PlayerAdded:Connect(RefreshPlayers)
 Players.PlayerRemoving:Connect(RefreshPlayers)
 
+-- CREDITS
+PageTitle(CreditsPage, "Credits")
+local CRT = Instance.new("TextLabel")
+CRT.Size = UDim2.new(1, -24, 1, -40)
+CRT.Position = UDim2.fromOffset(12, 34)
+CRT.BackgroundTransparency = 1
+CRT.Text = "★  This hub was created by Shaw  ★\n\nShaw Hub v5\nMade by: Shaw\nGitHub: Shawu7373\n\nThanks for using Shaw Hub!\n\nIf you enjoy it, share it with friends.\nMore features coming soon."
+CRT.TextColor3 = Color3.fromRGB(255, 80, 80)
+CRT.TextSize = 12
+CRT.Font = Enum.Font.GothamBold
+CRT.TextXAlignment = Enum.TextXAlignment.Left
+CRT.TextYAlignment = Enum.TextYAlignment.Top
+CRT.TextWrapped = true
+CRT.Parent = CreditsPage
+
 -- UPDATES
 PageTitle(UpdatesPage, "Updates")
 local UT = Instance.new("TextLabel")
 UT.Size = UDim2.new(1, -24, 1, -40)
 UT.Position = UDim2.fromOffset(12, 34)
 UT.BackgroundTransparency = 1
-UT.Text = "v4\n\n+ Movement tab: Speed, Jump, Infinite Jump, Fly, Noclip\n+ Visual tab: Fullbright, Player ESP\n+ 99 Nights tab: Auto Chop, Bring Items, Auto Feed\n+ Same UI, same style, same neon"
+UT.Text = "v5\n\n+ Neon is now RED\n+ Mini square says SW\n+ Credits tab: created by Shaw\n+ God Mode for 99 Nights\n+ Fixed Fly (works with mobile joystick)\n+ Fixed empty window rendering\n+ Better mini square dragging"
 UT.TextColor3 = Color3.fromRGB(190, 190, 190)
 UT.TextSize = 11
 UT.Font = Enum.Font.Gotham
@@ -678,25 +643,26 @@ UT.Parent = UpdatesPage
 
 -- MINI
 local Mini = Instance.new("TextButton")
-Mini.Size = UDim2.fromOffset(52, 52)
-Mini.Position = UDim2.new(0, 12, 0.5, -26)
+Mini.Name = "ShawMini"
+Mini.Size = UDim2.fromOffset(54, 54)
+Mini.Position = UDim2.new(0, 12, 0.5, -27)
 Mini.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
 Mini.BorderSizePixel = 0
-Mini.Text = "SH"
+Mini.Text = "SW"
 Mini.TextColor3 = Color3.fromRGB(255, 255, 255)
-Mini.TextSize = 14
+Mini.TextSize = 16
 Mini.Font = Enum.Font.GothamBold
 Mini.Visible = false
 Mini.Active = true
 Mini.Parent = Gui
 
 local MC = Instance.new("UICorner")
-MC.CornerRadius = UDim.new(0, 8)
+MC.CornerRadius = UDim.new(0, 10)
 MC.Parent = Mini
 
 local MS = Instance.new("UIStroke")
 MS.Color = CONFIG.NeonColor
-MS.Thickness = 1.6
+MS.Thickness = 1.8
 MS.Parent = Mini
 
 makeDraggable(Mini, Mini)
@@ -732,7 +698,7 @@ Min.Activated:Connect(function()
 	Mini.Visible = true
 end)
 
--- KILL AURA
+-- MAIN LOOPS
 local lastAtk = 0
 local function findTarget()
 	local ch = Player.Character
@@ -757,28 +723,81 @@ local function findTarget()
 end
 
 RunService.Heartbeat:Connect(function()
-	if not AuraEnabled then return end
-	if tick() - lastAtk < CONFIG.KillAuraDelay then return end
 	local ch = Player.Character
 	if not ch then return end
-	local r = ch:FindFirstChild("HumanoidRootPart")
 	local h = ch:FindFirstChildOfClass("Humanoid")
-	if not r or not h or h.Health <= 0 then return end
-	local t = findTarget()
-	if not t then return end
-	lastAtk = tick()
-	if CONFIG.AuraAutoFace then
-		local tr = t.Character and t.Character:FindFirstChild("HumanoidRootPart")
-		if tr then
-			local la = Vector3.new(tr.Position.X, r.Position.Y, tr.Position.Z)
-			if (la - r.Position).Magnitude > 0.05 then
-				r.CFrame = CFrame.new(r.Position, la)
+	local root = ch:FindFirstChild("HumanoidRootPart")
+
+	if h then
+		h.WalkSpeed = speedEnabled and CONFIG.WalkSpeed or 16
+		h.JumpPower = jumpEnabled and CONFIG.JumpPower or 50
+		h.UseJumpPower = true
+	end
+
+	if noclipEnabled then
+		for _, part in ipairs(ch:GetDescendants()) do
+			if part:IsA("BasePart") then
+				part.CanCollide = false
 			end
 		end
 	end
-	local tool = ch:FindFirstChildOfClass("Tool")
-	if tool then pcall(function() tool:Activate() end) end
+
+	if flyEnabled and root and h then
+		if not flyBV then
+			flyBV = Instance.new("BodyVelocity")
+			flyBV.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
+			flyBV.P = 1250
+			flyBV.Parent = root
+		end
+		local moveDir = h.MoveDirection
+		local vertical = 0
+		if UserInputService:IsKeyDown(Enum.KeyCode.Space) then vertical = 1 end
+		if UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then vertical = -1 end
+		flyBV.Velocity = (moveDir * CONFIG.FlySpeed) + Vector3.new(0, vertical * CONFIG.FlySpeed, 0)
+	else
+		clearFly()
+	end
+
+	applyAnti()
+	applyGod()
+
+	if AuraEnabled and tick() - lastAtk >= CONFIG.KillAuraDelay then
+		if root and h and h.Health > 0 then
+			local t = findTarget()
+			if t then
+				lastAtk = tick()
+				if CONFIG.AuraAutoFace then
+					local tr = t.Character and t.Character:FindFirstChild("HumanoidRootPart")
+					if tr then
+						local la = Vector3.new(tr.Position.X, root.Position.Y, tr.Position.Z)
+						if (la - root.Position).Magnitude > 0.05 then
+							root.CFrame = CFrame.new(root.Position, la)
+						end
+					end
+				end
+				local tool = ch:FindFirstChildOfClass("Tool")
+				if tool then pcall(function() tool:Activate() end) end
+			end
+		end
+	end
+
+	if treeEnabled and root then
+		local tool = ch:FindFirstChildOfClass("Tool")
+		if tool then
+			local nearest, nd = nil, 30
+			for _, obj in ipairs(workspace:GetDescendants()) do
+				if obj:IsA("BasePart") and (obj.Name:lower():find("tree") or obj.Name:lower():find("wood") or obj.Name:lower():find("log")) then
+					local d = (obj.Position - root.Position).Magnitude
+					if d < nd then nearest, nd = obj, d end
+				end
+			end
+			if nearest then
+				root.CFrame = CFrame.new(nearest.Position + Vector3.new(0, 3, 0))
+				pcall(function() tool:Activate() end)
+			end
+		end
+	end
 end)
 
 ShowPage("Home")
-print("Shaw Hub v4 loaded")
+print("Shaw Hub v5 loaded — created by Shaw")
