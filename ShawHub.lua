@@ -1,311 +1,233 @@
---// SHAW HUB v2
---// Studio: LocalScript in StarterPlayer > StarterPlayerScripts
---// Executor: paste into any Script executor
-
---==================================================
--- CONFIG — edit these values
---==================================================
+--// SHAW HUB v3 — working on Delta mobile
 local CONFIG = {
-	KillAuraRange   = 1,                    -- set to 1, 10, 50, 100 ...
-	KillAuraDelay   = 0.1,                  -- seconds between attacks
-	AuraAutoFace    = true,
-	NeonColor       = Color3.fromRGB(0, 255, 255), -- edge line color
+	KillAuraRange = 1,
+	KillAuraDelay = 0.1,
+	AuraAutoFace  = true,
+	NeonColor     = Color3.fromRGB(0, 255, 255),
 }
 
---==================================================
--- SERVICES
---==================================================
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 
 local Player = Players.LocalPlayer
-
---==================================================
--- GUI PARENT
---==================================================
-local GuiParent = nil
-
-pcall(function()
-	if gethui then
-		local h = gethui()
-		if h then GuiParent = h end
-	end
-end)
-
-if not GuiParent then
-	pcall(function()
-		local cg = game:GetService("CoreGui")
-		local t = Instance.new("Folder")
-		t.Parent = cg
-		t:Destroy()
-		GuiParent = cg
-	end)
-end
-
-if not GuiParent and Player then
-	pcall(function()
-		GuiParent = Player:WaitForChild("PlayerGui", 10)
-	end)
-end
-
-if not GuiParent then
-	warn("Shaw Hub: could not find a GUI parent")
-	return
-end
+local GuiParent = Player:WaitForChild("PlayerGui")
 
 for _, v in ipairs(GuiParent:GetChildren()) do
-	if v.Name == "ShawHub" then
-		v:Destroy()
-	end
+	if v.Name == "ShawHub" then v:Destroy() end
 end
 
---==================================================
--- GUI
---==================================================
+local function makeDraggable(dragPart, targetFrame)
+	local dragging, dragStart, startPos = false, nil, nil
+	dragPart.InputBegan:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseButton1
+			or input.UserInputType == Enum.UserInputType.Touch then
+			dragging = true
+			dragStart = input.Position
+			startPos = targetFrame.Position
+		end
+	end)
+	dragPart.InputEnded:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseButton1
+			or input.UserInputType == Enum.UserInputType.Touch then
+			dragging = false
+		end
+	end)
+	UserInputService.InputChanged:Connect(function(input)
+		if not dragging then return end
+		if input.UserInputType == Enum.UserInputType.MouseMovement
+			or input.UserInputType == Enum.UserInputType.Touch then
+			local delta = input.Position - dragStart
+			targetFrame.Position = UDim2.new(
+				startPos.X.Scale, startPos.X.Offset + delta.X,
+				startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+		end
+	end)
+end
+
 local Gui = Instance.new("ScreenGui")
 Gui.Name = "ShawHub"
 Gui.ResetOnSpawn = false
 Gui.IgnoreGuiInset = true
 Gui.DisplayOrder = 999999
-Gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-Gui.Enabled = true
 Gui.Parent = GuiParent
 
---==================================================
--- MAIN WINDOW
---==================================================
 local Main = Instance.new("Frame")
-Main.Name = "Main"
-Main.Size = UDim2.fromOffset(470, 310)
-Main.Position = UDim2.new(0.5, -235, 0.5, -155)
+Main.Size = UDim2.fromOffset(400, 300)
+Main.Position = UDim2.new(0.5, -200, 0.5, -150)
 Main.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-Main.BackgroundTransparency = 0
 Main.BorderSizePixel = 0
-Main.Visible = true
 Main.Active = true
 Main.Parent = Gui
 
-local Corner = Instance.new("UICorner")
-Corner.CornerRadius = UDim.new(0, 12)
-Corner.Parent = Main
+local C = Instance.new("UICorner")
+C.CornerRadius = UDim.new(0, 12)
+C.Parent = Main
 
--- neon edge
-local NeonStroke = Instance.new("UIStroke")
-NeonStroke.Color = CONFIG.NeonColor
-NeonStroke.Thickness = 1.6
-NeonStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-NeonStroke.Parent = Main
+local NS = Instance.new("UIStroke")
+NS.Color = CONFIG.NeonColor
+NS.Thickness = 1.6
+NS.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+NS.Parent = Main
 
---==================================================
--- TOP BAR
---==================================================
 local Top = Instance.new("Frame")
-Top.Size = UDim2.new(1, 0, 0, 48)
+Top.Size = UDim2.new(1, 0, 0, 44)
 Top.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-Top.BackgroundTransparency = 0
 Top.BorderSizePixel = 0
 Top.Active = true
 Top.Parent = Main
 
-local TopCorner = Instance.new("UICorner")
-TopCorner.CornerRadius = UDim.new(0, 12)
-TopCorner.Parent = Top
+local TC = Instance.new("UICorner")
+TC.CornerRadius = UDim.new(0, 12)
+TC.Parent = Top
 
 local Title = Instance.new("TextLabel")
-Title.Size = UDim2.new(1, -100, 1, 0)
-Title.Position = UDim2.fromOffset(18, 0)
+Title.Size = UDim2.new(1, -110, 1, 0)
+Title.Position = UDim2.fromOffset(16, 0)
 Title.BackgroundTransparency = 1
 Title.Text = "Shaw Hub"
 Title.TextColor3 = Color3.fromRGB(255, 255, 255)
-Title.TextSize = 18
+Title.TextSize = 17
 Title.Font = Enum.Font.GothamBold
 Title.TextXAlignment = Enum.TextXAlignment.Left
 Title.Parent = Top
 
-local SubTitle = Instance.new("TextLabel")
-SubTitle.Size = UDim2.new(1, -100, 0, 16)
-SubTitle.Position = UDim2.fromOffset(18, 28)
-SubTitle.BackgroundTransparency = 1
-SubTitle.Text = "99 NITF"
-SubTitle.TextColor3 = Color3.fromRGB(150, 150, 150)
-SubTitle.TextSize = 10
-SubTitle.Font = Enum.Font.Gotham
-SubTitle.TextXAlignment = Enum.TextXAlignment.Left
-SubTitle.Parent = Top
+local Min = Instance.new("TextButton")
+Min.Size = UDim2.fromOffset(34, 34)
+Min.Position = UDim2.new(1, -76, 0, 5)
+Min.BackgroundTransparency = 1
+Min.Text = "−"
+Min.TextColor3 = Color3.fromRGB(200, 200, 200)
+Min.TextSize = 22
+Min.Font = Enum.Font.GothamBold
+Min.Parent = Top
 
-local Minimize = Instance.new("TextButton")
-Minimize.Size = UDim2.fromOffset(38, 38)
-Minimize.Position = UDim2.new(1, -82, 0, 5)
-Minimize.BackgroundTransparency = 1
-Minimize.Text = "−"
-Minimize.TextColor3 = Color3.fromRGB(200, 200, 200)
-Minimize.TextSize = 24
-Minimize.Font = Enum.Font.GothamBold
-Minimize.Parent = Top
+local CloseBtn = Instance.new("TextButton")
+CloseBtn.Size = UDim2.fromOffset(34, 34)
+CloseBtn.Position = UDim2.new(1, -40, 0, 5)
+CloseBtn.BackgroundTransparency = 1
+CloseBtn.Text = "×"
+CloseBtn.TextColor3 = Color3.fromRGB(200, 200, 200)
+CloseBtn.TextSize = 22
+CloseBtn.Font = Enum.Font.Gotham
+CloseBtn.Parent = Top
 
-local Close = Instance.new("TextButton")
-Close.Size = UDim2.fromOffset(38, 38)
-Close.Position = UDim2.new(1, -43, 0, 5)
-Close.BackgroundTransparency = 1
-Close.Text = "×"
-Close.TextColor3 = Color3.fromRGB(200, 200, 200)
-Close.TextSize = 23
-Close.Font = Enum.Font.Gotham
-Close.Parent = Top
+makeDraggable(Top, Main)
 
---==================================================
--- CLOSE CONFIRM DIALOG
---==================================================
-local ConfirmFrame = Instance.new("Frame")
-ConfirmFrame.Name = "ConfirmDialog"
-ConfirmFrame.Size = UDim2.fromOffset(280, 120)
-ConfirmFrame.Position = UDim2.new(0.5, -140, 0.5, -60)
-ConfirmFrame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-ConfirmFrame.BorderSizePixel = 0
-ConfirmFrame.Visible = false
-ConfirmFrame.ZIndex = 50
-ConfirmFrame.Active = true
-ConfirmFrame.Parent = Gui
+local Confirm = Instance.new("Frame")
+Confirm.Size = UDim2.fromOffset(260, 110)
+Confirm.Position = UDim2.new(0.5, -130, 0.5, -55)
+Confirm.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+Confirm.BorderSizePixel = 0
+Confirm.Visible = false
+Confirm.ZIndex = 50
+Confirm.Active = true
+Confirm.Parent = Gui
 
-local ConfirmCorner = Instance.new("UICorner")
-ConfirmCorner.CornerRadius = UDim.new(0, 10)
-ConfirmCorner.Parent = ConfirmFrame
+local CC = Instance.new("UICorner")
+CC.CornerRadius = UDim.new(0, 10)
+CC.Parent = Confirm
 
-local ConfirmStroke = Instance.new("UIStroke")
-ConfirmStroke.Color = CONFIG.NeonColor
-ConfirmStroke.Thickness = 1.6
-ConfirmStroke.Parent = ConfirmFrame
+local CS = Instance.new("UIStroke")
+CS.Color = CONFIG.NeonColor
+CS.Thickness = 1.6
+CS.Parent = Confirm
 
-local ConfirmText = Instance.new("TextLabel")
-ConfirmText.Size = UDim2.new(1, -20, 0, 40)
-ConfirmText.Position = UDim2.fromOffset(10, 15)
-ConfirmText.BackgroundTransparency = 1
-ConfirmText.Text = "Close the whole script?"
-ConfirmText.TextColor3 = Color3.fromRGB(255, 255, 255)
-ConfirmText.TextSize = 14
-ConfirmText.Font = Enum.Font.GothamBold
-ConfirmText.Parent = ConfirmFrame
+local CText = Instance.new("TextLabel")
+CText.Size = UDim2.new(1, -20, 0, 40)
+CText.Position = UDim2.fromOffset(10, 12)
+CText.BackgroundTransparency = 1
+CText.Text = "Close the script?"
+CText.TextColor3 = Color3.fromRGB(255, 255, 255)
+CText.TextSize = 14
+CText.Font = Enum.Font.GothamBold
+CText.Parent = Confirm
 
-local ConfirmYes = Instance.new("TextButton")
-ConfirmYes.Size = UDim2.new(0.5, -20, 0, 40)
-ConfirmYes.Position = UDim2.new(0, 10, 1, -55)
-ConfirmYes.BackgroundColor3 = Color3.fromRGB(20, 0, 0)
-ConfirmYes.BorderSizePixel = 0
-ConfirmYes.Text = "Close Script"
-ConfirmYes.TextColor3 = Color3.fromRGB(255, 90, 90)
-ConfirmYes.TextSize = 12
-ConfirmYes.Font = Enum.Font.GothamBold
-ConfirmYes.Parent = ConfirmFrame
+local Yes = Instance.new("TextButton")
+Yes.Size = UDim2.new(0.5, -18, 0, 36)
+Yes.Position = UDim2.new(0, 10, 1, -46)
+Yes.BackgroundColor3 = Color3.fromRGB(30, 0, 0)
+Yes.BorderSizePixel = 0
+Yes.Text = "Close"
+Yes.TextColor3 = Color3.fromRGB(255, 90, 90)
+Yes.TextSize = 12
+Yes.Font = Enum.Font.GothamBold
+Yes.Parent = Confirm
 
-local ConfirmYesCorner = Instance.new("UICorner")
-ConfirmYesCorner.CornerRadius = UDim.new(0, 6)
-ConfirmYesCorner.Parent = ConfirmYes
+local YC = Instance.new("UICorner")
+YC.CornerRadius = UDim.new(0, 6)
+YC.Parent = Yes
 
-local ConfirmYesStroke = Instance.new("UIStroke")
-ConfirmYesStroke.Color = Color3.fromRGB(255, 80, 80)
-ConfirmYesStroke.Thickness = 1.2
-ConfirmYesStroke.Parent = ConfirmYes
+local No = Instance.new("TextButton")
+No.Size = UDim2.new(0.5, -18, 0, 36)
+No.Position = UDim2.new(0.5, 8, 1, -46)
+No.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+No.BorderSizePixel = 0
+No.Text = "Cancel"
+No.TextColor3 = Color3.fromRGB(200, 200, 200)
+No.TextSize = 12
+No.Font = Enum.Font.GothamBold
+No.Parent = Confirm
 
-local ConfirmNo = Instance.new("TextButton")
-ConfirmNo.Size = UDim2.new(0.5, -20, 0, 40)
-ConfirmNo.Position = UDim2.new(0.5, 10, 1, -55)
-ConfirmNo.BackgroundColor3 = Color3.fromRGB(0, 10, 10)
-ConfirmNo.BorderSizePixel = 0
-ConfirmNo.Text = "Cancel"
-ConfirmNo.TextColor3 = Color3.fromRGB(200, 200, 200)
-ConfirmNo.TextSize = 12
-ConfirmNo.Font = Enum.Font.GothamBold
-ConfirmNo.Parent = ConfirmFrame
+local NC = Instance.new("UICorner")
+NC.CornerRadius = UDim.new(0, 6)
+NC.Parent = No
 
-local ConfirmNoCorner = Instance.new("UICorner")
-ConfirmNoCorner.CornerRadius = UDim.new(0, 6)
-ConfirmNoCorner.Parent = ConfirmNo
+CloseBtn.Activated:Connect(function() Confirm.Visible = true end)
+No.Activated:Connect(function() Confirm.Visible = false end)
+Yes.Activated:Connect(function() Gui:Destroy() end)
 
-local ConfirmNoStroke = Instance.new("UIStroke")
-ConfirmNoStroke.Color = Color3.fromRGB(60, 60, 60)
-ConfirmNoStroke.Thickness = 1.2
-ConfirmNoStroke.Parent = ConfirmNo
-
-Close.Activated:Connect(function()
-	ConfirmFrame.Visible = true
-end)
-
-ConfirmNo.Activated:Connect(function()
-	ConfirmFrame.Visible = false
-end)
-
-ConfirmYes.Activated:Connect(function()
-	ConfirmFrame.Visible = false
-	if Gui then Gui:Destroy() end
-end)
-
---==================================================
--- LEFT SIDEBAR
---==================================================
 local Sidebar = Instance.new("Frame")
-Sidebar.Size = UDim2.new(0, 130, 1, -48)
-Sidebar.Position = UDim2.fromOffset(0, 48)
+Sidebar.Size = UDim2.new(0, 110, 1, -44)
+Sidebar.Position = UDim2.fromOffset(0, 44)
 Sidebar.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-Sidebar.BackgroundTransparency = 0
 Sidebar.BorderSizePixel = 0
 Sidebar.Parent = Main
 
-local SideLayout = Instance.new("UIListLayout")
-SideLayout.Padding = UDim.new(0, 4)
-SideLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-SideLayout.SortOrder = Enum.SortOrder.LayoutOrder
-SideLayout.Parent = Sidebar
+local SL = Instance.new("UIListLayout")
+SL.Padding = UDim.new(0, 4)
+SL.HorizontalAlignment = Enum.HorizontalAlignment.Center
+SL.SortOrder = Enum.SortOrder.LayoutOrder
+SL.Parent = Sidebar
 
-local SidePadding = Instance.new("UIPadding")
-SidePadding.PaddingTop = UDim.new(0, 12)
-SidePadding.Parent = Sidebar
+local SP = Instance.new("UIPadding")
+SP.PaddingTop = UDim.new(0, 10)
+SP.Parent = Sidebar
 
-local sideButtons = {}
+local sideBtns = {}
 
-local function SideButton(text, pageName)
+local function SideButton(text, name)
 	local B = Instance.new("TextButton")
-	B.Size = UDim2.fromOffset(112, 36)
+	B.Size = UDim2.fromOffset(94, 32)
 	B.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-	B.BackgroundTransparency = 0
 	B.BorderSizePixel = 0
 	B.Text = text
 	B.TextColor3 = Color3.fromRGB(200, 200, 200)
-	B.TextSize = 12
+	B.TextSize = 11
 	B.Font = Enum.Font.Gotham
 	B.Parent = Sidebar
-
-	local C = Instance.new("UICorner")
-	C.CornerRadius = UDim.new(0, 7)
-	C.Parent = B
-
-	local S = Instance.new("UIStroke")
-	S.Color = Color3.fromRGB(40, 40, 40)
-	S.Thickness = 1
-	S.Parent = B
-
-	sideButtons[pageName] = {button = B, stroke = S}
+	local c = Instance.new("UICorner")
+	c.CornerRadius = UDim.new(0, 6)
+	c.Parent = B
+	local s = Instance.new("UIStroke")
+	s.Color = Color3.fromRGB(40, 40, 40)
+	s.Thickness = 1
+	s.Parent = B
+	sideBtns[name] = {btn = B, stroke = s}
 	return B
 end
 
---==================================================
--- PAGES CONTAINER
---==================================================
 local Content = Instance.new("Frame")
-Content.Size = UDim2.new(1, -130, 1, -48)
-Content.Position = UDim2.fromOffset(130, 48)
+Content.Size = UDim2.new(1, -110, 1, -44)
+Content.Position = UDim2.fromOffset(110, 44)
 Content.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-Content.BackgroundTransparency = 0
 Content.BorderSizePixel = 0
 Content.Parent = Main
 
 local pages = {}
-
 local function makePage(name)
 	local P = Instance.new("Frame")
-	P.Name = name
 	P.Size = UDim2.new(1, 0, 1, 0)
-	P.Position = UDim2.fromOffset(0, 0)
 	P.BackgroundTransparency = 1
 	P.Visible = false
 	P.Parent = Content
@@ -320,253 +242,199 @@ local UpdatesPage = makePage("Updates")
 
 local function PageTitle(parent, text)
 	local T = Instance.new("TextLabel")
-	T.Size = UDim2.new(1, -30, 0, 35)
-	T.Position = UDim2.fromOffset(15, 10)
+	T.Size = UDim2.new(1, -24, 0, 30)
+	T.Position = UDim2.fromOffset(12, 8)
 	T.BackgroundTransparency = 1
 	T.Text = text
 	T.TextColor3 = Color3.fromRGB(255, 255, 255)
-	T.TextSize = 18
+	T.TextSize = 16
 	T.Font = Enum.Font.GothamBold
 	T.TextXAlignment = Enum.TextXAlignment.Left
 	T.Parent = parent
 	return T
 end
 
--- sidebar entries
 local HomeBtn    = SideButton("☆  Home", "Home")
 local CombatBtn  = SideButton("⚔  Combat", "Combat")
 local PlayersBtn = SideButton("♙  Players", "Players")
 local UpdatesBtn = SideButton("⚡  Updates", "Updates")
 
 local function ShowPage(name)
-	for pname, page in pairs(pages) do
-		page.Visible = (pname == name)
-	end
-	for bname, data in pairs(sideButtons) do
+	for pname, page in pairs(pages) do page.Visible = (pname == name) end
+	for bname, data in pairs(sideBtns) do
 		if bname == name then
 			data.stroke.Color = CONFIG.NeonColor
-			data.button.TextColor3 = Color3.fromRGB(255, 255, 255)
+			data.btn.TextColor3 = Color3.fromRGB(255, 255, 255)
 		else
 			data.stroke.Color = Color3.fromRGB(40, 40, 40)
-			data.button.TextColor3 = Color3.fromRGB(200, 200, 200)
+			data.btn.TextColor3 = Color3.fromRGB(200, 200, 200)
 		end
 	end
 end
 
-HomeBtn.Activated:Connect(function()    ShowPage("Home") end)
-CombatBtn.Activated:Connect(function()  ShowPage("Combat") end)
+HomeBtn.Activated:Connect(function() ShowPage("Home") end)
+CombatBtn.Activated:Connect(function() ShowPage("Combat") end)
 PlayersBtn.Activated:Connect(function() ShowPage("Players") end)
 UpdatesBtn.Activated:Connect(function() ShowPage("Updates") end)
 
---==================================================
--- HOME PAGE
---==================================================
 PageTitle(HomePage, "Home")
+local HT = Instance.new("TextLabel")
+HT.Size = UDim2.new(1, -24, 1, -50)
+HT.Position = UDim2.fromOffset(12, 42)
+HT.BackgroundTransparency = 1
+HT.Text = "Welcome to Shaw Hub\n\nCombat -> Kill Aura + Anti-Hit\nPlayers -> Teleport\nUpdates -> Changelog"
+HT.TextColor3 = Color3.fromRGB(190, 190, 190)
+HT.TextSize = 12
+HT.Font = Enum.Font.Gotham
+HT.TextXAlignment = Enum.TextXAlignment.Left
+HT.TextYAlignment = Enum.TextYAlignment.Top
+HT.TextWrapped = true
+HT.Parent = HomePage
 
-local HomeText = Instance.new("TextLabel")
-HomeText.Size = UDim2.new(1, -30, 1, -60)
-HomeText.Position = UDim2.fromOffset(15, 50)
-HomeText.BackgroundTransparency = 1
-HomeText.Text = "Welcome to Shaw Hub\n\nUse the sidebar to switch pages.\n\nCombat  → Kill Aura + Anti-Hit\nPlayers → Teleport to any player\nUpdates → Changelog"
-HomeText.TextColor3 = Color3.fromRGB(190, 190, 190)
-HomeText.TextSize = 13
-HomeText.Font = Enum.Font.Gotham
-HomeText.TextXAlignment = Enum.TextXAlignment.Left
-HomeText.TextYAlignment = Enum.TextYAlignment.Top
-HomeText.TextWrapped = true
-HomeText.Parent = HomePage
-
---==================================================
--- COMBAT PAGE
---==================================================
 PageTitle(CombatPage, "Combat")
 
--- Kill Aura toggle
 local AuraEnabled = false
+local AuraBtn = Instance.new("TextButton")
+AuraBtn.Size = UDim2.new(1, -24, 0, 40)
+AuraBtn.Position = UDim2.fromOffset(12, 44)
+AuraBtn.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+AuraBtn.BorderSizePixel = 0
+AuraBtn.Text = "Kill Aura     OFF"
+AuraBtn.TextColor3 = Color3.fromRGB(220, 220, 220)
+AuraBtn.TextSize = 13
+AuraBtn.Font = Enum.Font.GothamMedium
+AuraBtn.TextXAlignment = Enum.TextXAlignment.Left
+AuraBtn.Parent = CombatPage
 
-local AuraButton = Instance.new("TextButton")
-AuraButton.Size = UDim2.new(1, -30, 0, 48)
-AuraButton.Position = UDim2.fromOffset(15, 55)
-AuraButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-AuraButton.BorderSizePixel = 0
-AuraButton.Text = "Kill Aura     OFF"
-AuraButton.TextColor3 = Color3.fromRGB(220, 220, 220)
-AuraButton.TextSize = 14
-AuraButton.Font = Enum.Font.GothamMedium
-AuraButton.TextXAlignment = Enum.TextXAlignment.Left
-AuraButton.Parent = CombatPage
+local AP = Instance.new("UIPadding")
+AP.PaddingLeft = UDim.new(0, 12)
+AP.Parent = AuraBtn
 
-local AuraPad = Instance.new("UIPadding")
-AuraPad.PaddingLeft = UDim.new(0, 15)
-AuraPad.Parent = AuraButton
+local AC = Instance.new("UICorner")
+AC.CornerRadius = UDim.new(0, 7)
+AC.Parent = AuraBtn
 
-local AuraCorner = Instance.new("UICorner")
-AuraCorner.CornerRadius = UDim.new(0, 8)
-AuraCorner.Parent = AuraButton
+local AS = Instance.new("UIStroke")
+AS.Color = Color3.fromRGB(40, 40, 40)
+AS.Thickness = 1
+AS.Parent = AuraBtn
 
-local AuraStroke = Instance.new("UIStroke")
-AuraStroke.Color = Color3.fromRGB(40, 40, 40)
-AuraStroke.Thickness = 1
-AuraStroke.Parent = AuraButton
-
-AuraButton.Activated:Connect(function()
+AuraBtn.Activated:Connect(function()
 	AuraEnabled = not AuraEnabled
-	AuraButton.Text = AuraEnabled and "Kill Aura     ON" or "Kill Aura     OFF"
+	AuraBtn.Text = AuraEnabled and "Kill Aura     ON" or "Kill Aura     OFF"
 end)
 
--- range info label
 local RangeInfo = Instance.new("TextLabel")
-RangeInfo.Size = UDim2.new(1, -30, 0, 24)
-RangeInfo.Position = UDim2.fromOffset(15, 112)
+RangeInfo.Size = UDim2.new(1, -24, 0, 20)
+RangeInfo.Position = UDim2.fromOffset(12, 90)
 RangeInfo.BackgroundTransparency = 1
-RangeInfo.Text = "Kill Aura Range: " .. CONFIG.KillAuraRange .. "   (edit CONFIG.KillAuraRange in script)"
+RangeInfo.Text = "Range: " .. CONFIG.KillAuraRange .. " (edit CONFIG)"
 RangeInfo.TextColor3 = Color3.fromRGB(170, 170, 170)
-RangeInfo.TextSize = 11
+RangeInfo.TextSize = 10
 RangeInfo.Font = Enum.Font.Gotham
 RangeInfo.TextXAlignment = Enum.TextXAlignment.Left
 RangeInfo.Parent = CombatPage
 
--- Anti-Hit toggle
-local AntiHitEnabled = false
+local AntiEnabled = false
+local AntiBtn = Instance.new("TextButton")
+AntiBtn.Size = UDim2.new(1, -24, 0, 40)
+AntiBtn.Position = UDim2.fromOffset(12, 116)
+AntiBtn.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+AntiBtn.BorderSizePixel = 0
+AntiBtn.Text = "Anti-Hit     OFF"
+AntiBtn.TextColor3 = Color3.fromRGB(220, 220, 220)
+AntiBtn.TextSize = 13
+AntiBtn.Font = Enum.Font.GothamMedium
+AntiBtn.TextXAlignment = Enum.TextXAlignment.Left
+AntiBtn.Parent = CombatPage
 
-local AntiHitButton = Instance.new("TextButton")
-AntiHitButton.Size = UDim2.new(1, -30, 0, 48)
-AntiHitButton.Position = UDim2.fromOffset(15, 145)
-AntiHitButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-AntiHitButton.BorderSizePixel = 0
-AntiHitButton.Text = "Anti-Hit     OFF"
-AntiHitButton.TextColor3 = Color3.fromRGB(220, 220, 220)
-AntiHitButton.TextSize = 14
-AntiHitButton.Font = Enum.Font.GothamMedium
-AntiHitButton.TextXAlignment = Enum.TextXAlignment.Left
-AntiHitButton.Parent = CombatPage
+local AnP = Instance.new("UIPadding")
+AnP.PaddingLeft = UDim.new(0, 12)
+AnP.Parent = AntiBtn
 
-local AntiPad = Instance.new("UIPadding")
-AntiPad.PaddingLeft = UDim.new(0, 15)
-AntiPad.Parent = AntiHitButton
+local AnC = Instance.new("UICorner")
+AnC.CornerRadius = UDim.new(0, 7)
+AnC.Parent = AntiBtn
 
-local AntiCorner = Instance.new("UICorner")
-AntiCorner.CornerRadius = UDim.new(0, 8)
-AntiCorner.Parent = AntiHitButton
+local AnS = Instance.new("UIStroke")
+AnS.Color = Color3.fromRGB(40, 40, 40)
+AnS.Thickness = 1
+AnS.Parent = AntiBtn
 
-local AntiStroke = Instance.new("UIStroke")
-AntiStroke.Color = Color3.fromRGB(40, 40, 40)
-AntiStroke.Thickness = 1
-AntiStroke.Parent = AntiHitButton
-
--- Anti-hit implementation
-local function applyAntiHit()
-	if not AntiHitEnabled then return end
-	local char = Player and Player.Character
-	if not char then return end
-
-	local hum = char:FindFirstChildOfClass("Humanoid")
-	if hum then
-		pcall(function()
-			hum.MaxHealth = math.huge
-			hum.Health = math.huge
-		end)
-	end
-
-	if not char:FindFirstChildOfClass("ForceField") then
+local function applyAnti()
+	if not AntiEnabled then return end
+	local ch = Player.Character
+	if not ch then return end
+	local h = ch:FindFirstChildOfClass("Humanoid")
+	if h then pcall(function() h.MaxHealth = math.huge; h.Health = math.huge end) end
+	if not ch:FindFirstChildOfClass("ForceField") then
 		local ff = Instance.new("ForceField")
 		ff.Visible = false
-		ff.Parent = char
+		ff.Parent = ch
 	end
 end
 
-local function removeAntiHit()
-	local char = Player and Player.Character
-	if not char then return end
-	local ff = char:FindFirstChildOfClass("ForceField")
-	if ff then ff:Destroy() end
-end
-
-AntiHitButton.Activated:Connect(function()
-	AntiHitEnabled = not AntiHitEnabled
-	AntiHitButton.Text = AntiHitEnabled and "Anti-Hit     ON" or "Anti-Hit     OFF"
-	if AntiHitEnabled then
-		applyAntiHit()
-	else
-		removeAntiHit()
-	end
+AntiBtn.Activated:Connect(function()
+	AntiEnabled = not AntiEnabled
+	AntiBtn.Text = AntiEnabled and "Anti-Hit     ON" or "Anti-Hit     OFF"
+	applyAnti()
 end)
 
-if Player then
-	Player.CharacterAdded:Connect(function()
-		task.wait(0.5)
-		applyAntiHit()
-	end)
-end
-
-RunService.Heartbeat:Connect(function()
-	if AntiHitEnabled then
-		applyAntiHit()
-	end
+Player.CharacterAdded:Connect(function()
+	task.wait(0.5)
+	applyAnti()
 end)
 
---==================================================
--- PLAYERS PAGE
---==================================================
+RunService.Heartbeat:Connect(function() applyAnti() end)
+
 PageTitle(PlayersPage, "Players")
+local Plist = Instance.new("ScrollingFrame")
+Plist.Size = UDim2.new(1, -24, 1, -50)
+Plist.Position = UDim2.fromOffset(12, 42)
+Plist.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+Plist.BorderSizePixel = 0
+Plist.ScrollBarThickness = 3
+Plist.CanvasSize = UDim2.new(0, 0, 0, 0)
+Plist.Parent = PlayersPage
 
-local PlayerList = Instance.new("ScrollingFrame")
-PlayerList.Size = UDim2.new(1, -30, 1, -60)
-PlayerList.Position = UDim2.fromOffset(15, 50)
-PlayerList.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-PlayerList.BorderSizePixel = 0
-PlayerList.ScrollBarThickness = 3
-PlayerList.CanvasSize = UDim2.new(0, 0, 0, 0)
-PlayerList.Parent = PlayersPage
+local PL = Instance.new("UIListLayout")
+PL.Padding = UDim.new(0, 3)
+PL.Parent = Plist
 
-local PlayerLayout = Instance.new("UIListLayout")
-PlayerLayout.Padding = UDim.new(0, 4)
-PlayerLayout.Parent = PlayerList
-
-PlayerLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-	PlayerList.CanvasSize = UDim2.fromOffset(0, PlayerLayout.AbsoluteContentSize.Y + 10)
+PL:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+	Plist.CanvasSize = UDim2.fromOffset(0, PL.AbsoluteContentSize.Y + 8)
 end)
 
 local function RefreshPlayers()
-	for _, child in ipairs(PlayerList:GetChildren()) do
-		if child:IsA("TextButton") then
-			child:Destroy()
-		end
+	for _, c in ipairs(Plist:GetChildren()) do
+		if c:IsA("TextButton") then c:Destroy() end
 	end
-
-	if not Player then return end
-
-	for _, target in ipairs(Players:GetPlayers()) do
-		if target ~= Player then
+	for _, t in ipairs(Players:GetPlayers()) do
+		if t ~= Player then
 			local B = Instance.new("TextButton")
-			B.Size = UDim2.new(1, -6, 0, 30)
+			B.Size = UDim2.new(1, -6, 0, 28)
 			B.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
 			B.BorderSizePixel = 0
-			B.Text = "  " .. target.DisplayName .. "  (@" .. target.Name .. ")"
+			B.Text = "  " .. t.DisplayName
 			B.TextColor3 = Color3.fromRGB(220, 220, 220)
 			B.TextSize = 11
 			B.Font = Enum.Font.Gotham
 			B.TextXAlignment = Enum.TextXAlignment.Left
-			B.Parent = PlayerList
-
-			local C = Instance.new("UICorner")
-			C.CornerRadius = UDim.new(0, 5)
-			C.Parent = B
-
-			local S = Instance.new("UIStroke")
-			S.Color = Color3.fromRGB(40, 40, 40)
-			S.Thickness = 1
-			S.Parent = B
-
+			B.Parent = Plist
+			local c = Instance.new("UICorner")
+			c.CornerRadius = UDim.new(0, 5)
+			c.Parent = B
+			local s = Instance.new("UIStroke")
+			s.Color = Color3.fromRGB(40, 40, 40)
+			s.Thickness = 1
+			s.Parent = B
 			B.Activated:Connect(function()
-				local myCharacter = Player.Character
-				local targetCharacter = target.Character
-				if myCharacter and targetCharacter then
-					local myRoot = myCharacter:FindFirstChild("HumanoidRootPart")
-					local targetRoot = targetCharacter:FindFirstChild("HumanoidRootPart")
-					if myRoot and targetRoot then
-						myRoot.CFrame = targetRoot.CFrame + Vector3.new(3, 0, 0)
-					end
+				local mc = Player.Character
+				local tc = t.Character
+				if mc and tc then
+					local mr = mc:FindFirstChild("HumanoidRootPart")
+					local tr = tc:FindFirstChild("HumanoidRootPart")
+					if mr and tr then mr.CFrame = tr.CFrame + Vector3.new(3, 0, 0) end
 				end
 			end)
 		end
@@ -577,7 +445,121 @@ RefreshPlayers()
 Players.PlayerAdded:Connect(RefreshPlayers)
 Players.PlayerRemoving:Connect(RefreshPlayers)
 
---==================================================
--- UPDATES PAGE
---==================================================
-Page
+PageTitle(UpdatesPage, "Updates")
+local UT = Instance.new("TextLabel")
+UT.Size = UDim2.new(1, -24, 1, -50)
+UT.Position = UDim2.fromOffset(12, 42)
+UT.BackgroundTransparency = 1
+UT.Text = "v3\n\n+ Fixed GUI so it shows in Delta\n+ Uses PlayerGui directly\n+ Working tabs\n+ Kill Aura / Anti-Hit\n+ Draggable window + square"
+UT.TextColor3 = Color3.fromRGB(190, 190, 190)
+UT.TextSize = 12
+UT.Font = Enum.Font.Gotham
+UT.TextXAlignment = Enum.TextXAlignment.Left
+UT.TextYAlignment = Enum.TextYAlignment.Top
+UT.TextWrapped = true
+UT.Parent = UpdatesPage
+
+local Mini = Instance.new("TextButton")
+Mini.Size = UDim2.fromOffset(52, 52)
+Mini.Position = UDim2.new(0, 12, 0.5, -26)
+Mini.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+Mini.BorderSizePixel = 0
+Mini.Text = "SH"
+Mini.TextColor3 = Color3.fromRGB(255, 255, 255)
+Mini.TextSize = 14
+Mini.Font = Enum.Font.GothamBold
+Mini.Visible = false
+Mini.Active = true
+Mini.Parent = Gui
+
+local MC = Instance.new("UICorner")
+MC.CornerRadius = UDim.new(0, 8)
+MC.Parent = Mini
+
+local MS = Instance.new("UIStroke")
+MS.Color = CONFIG.NeonColor
+MS.Thickness = 1.6
+MS.Parent = Mini
+
+makeDraggable(Mini, Mini)
+
+local miniPressPos, miniWasDrag
+Mini.InputBegan:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1
+		or input.UserInputType == Enum.UserInputType.Touch then
+		miniPressPos = input.Position
+		miniWasDrag = false
+	end
+end)
+Mini.InputChanged:Connect(function(input)
+	if not miniPressPos then return end
+	if input.UserInputType == Enum.UserInputType.MouseMovement
+		or input.UserInputType == Enum.UserInputType.Touch then
+		if (input.Position - miniPressPos).Magnitude > 6 then miniWasDrag = true end
+	end
+end)
+Mini.InputEnded:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1
+		or input.UserInputType == Enum.UserInputType.Touch then
+		if not miniWasDrag then
+			Main.Visible = true
+			Mini.Visible = false
+		end
+		miniPressPos = nil
+	end
+end)
+
+Min.Activated:Connect(function()
+	Main.Visible = false
+	Mini.Visible = true
+end)
+
+local lastAtk = 0
+local function findTarget()
+	local ch = Player.Character
+	if not ch then return nil end
+	local r = ch:FindFirstChild("HumanoidRootPart")
+	if not r then return nil end
+	local best, bd = nil, CONFIG.KillAuraRange + 0.01
+	for _, t in ipairs(Players:GetPlayers()) do
+		if t ~= Player then
+			local tc = t.Character
+			if tc then
+				local tr = tc:FindFirstChild("HumanoidRootPart")
+				local th = tc:FindFirstChildOfClass("Humanoid")
+				if tr and th and th.Health > 0 then
+					local d = (r.Position - tr.Position).Magnitude
+					if d <= bd then best, bd = t, d end
+				end
+			end
+		end
+	end
+	return best
+end
+
+RunService.Heartbeat:Connect(function()
+	if not AuraEnabled then return end
+	if tick() - lastAtk < CONFIG.KillAuraDelay then return end
+	local ch = Player.Character
+	if not ch then return end
+	local r = ch:FindFirstChild("HumanoidRootPart")
+	local h = ch:FindFirstChildOfClass("Humanoid")
+	if not r or not h or h.Health <= 0 then return end
+	local t = findTarget()
+	if not t then return end
+	lastAtk = tick()
+	if CONFIG.AuraAutoFace then
+		local tr = t.Character and t.Character:FindFirstChild("HumanoidRootPart")
+		if tr then
+			local la = Vector3.new(tr.Position.X, r.Position.Y, tr.Position.Z)
+			if (la - r.Position).Magnitude > 0.05 then
+				r.CFrame = CFrame.new(r.Position, la)
+			end
+		end
+	end
+	local tool = ch:FindFirstChildOfClass("Tool")
+	if tool then pcall(function() tool:Activate() end) end
+end)
+
+ShowPage("Home")
+print("Shaw Hub v3 loaded")
